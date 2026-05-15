@@ -21,7 +21,7 @@ def get_candles(symbol, interval="15min"):
         f"https://api.twelvedata.com/time_series"
         f"?symbol={symbol}"
         f"&interval={interval}"
-        f"&outputsize=20"
+        f"&outputsize=100"
         f"&apikey={API_KEY}"
     )
 
