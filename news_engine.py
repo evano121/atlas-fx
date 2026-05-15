@@ -1,22 +1,35 @@
-from datetime import datetime
+import csv
+from datetime import datetime, timedelta
 import pytz
-
 
 riyadh = pytz.timezone("Asia/Riyadh")
 
 
 def detect_news_risk():
-
     now = datetime.now(riyadh)
 
-    hour = now.hour
+    try:
+        with open("news_calendar.csv", "r") as file:
+            reader = csv.DictReader(file)
 
-    # Simplified placeholders
-    # Later we connect real economic calendar API
+            for row in reader:
+                if row["impact"] != "HIGH":
+                    continue
 
-    high_risk_hours = [15, 16]
+                news_time = riyadh.localize(
+                    datetime.strptime(
+                        row["date"] + " " + row["time"],
+                        "%Y-%m-%d %H:%M"
+                    )
+                )
 
-    if hour in high_risk_hours:
-        return "HIGH NEWS RISK"
+                window_start = news_time - timedelta(minutes=30)
+                window_end = news_time + timedelta(minutes=30)
 
-    return "LOW NEWS RISK"
+                if window_start <= now <= window_end:
+                    return f"HIGH NEWS RISK — {row['currency']} {row['event']}"
+
+        return "LOW NEWS RISK"
+
+    except Exception as e:
+        return f"NEWS DATA ERROR: {e}"

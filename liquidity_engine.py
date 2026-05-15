@@ -1,6 +1,10 @@
 import os
 import requests
 import pandas as pd
+from session_liquidity_engine import detect_session_liquidity
+from premium_discount_engine import detect_premium_discount
+from expansion_engine import detect_expansion_state
+from retracement_engine import build_retracement_entry
 from fvg_engine import detect_fvg
 from dotenv import load_dotenv
 from orderblock_engine import detect_order_block
@@ -12,11 +16,11 @@ load_dotenv()
 API_KEY = os.getenv("TWELVE_API_KEY")
 
 
-def get_candles(symbol):
+def get_candles(symbol, interval="15min"):
     url = (
         f"https://api.twelvedata.com/time_series"
         f"?symbol={symbol}"
-        f"&interval=15min"
+        f"&interval={interval}"
         f"&outputsize=20"
         f"&apikey={API_KEY}"
     )
@@ -60,7 +64,10 @@ def analyze_liquidity(symbol):
     crt = detect_crt(candles)
     fvg = detect_fvg(candles)
     ob = detect_order_block(candles)
-    
+    expansion_state = detect_expansion_state(candles)
+    premium_discount = detect_premium_discount(candles)
+    session_liquidity = detect_session_liquidity(candles)
+
 
     if latest["high"] > previous_high:
         sweep = "BUY SIDE LIQUIDITY TAKEN"
@@ -70,6 +77,7 @@ def analyze_liquidity(symbol):
         sweep = "NO SWEEP"
     
     trade_plan = build_trade_plan(candles, structure, sweep, crt, fvg, ob)
+    retracement = build_retracement_entry(candles, structure)
     return {
         "symbol": symbol,
         "sweep": sweep,
@@ -77,7 +85,11 @@ def analyze_liquidity(symbol):
         "crt": crt,
         "fvg": fvg,
         "ob": ob,
-        "trade_plan": trade_plan
+        "trade_plan": trade_plan,
+        "retracement": retracement,
+        "expansion_state": expansion_state,
+        "premium_discount": premium_discount,
+        "session_liquidity": session_liquidity
     }
 
 

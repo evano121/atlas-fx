@@ -7,6 +7,7 @@ conn = sqlite3.connect(DB_NAME)
 
 query = """
 SELECT
+    id,
     pair_name,
     session,
     grade,

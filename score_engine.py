@@ -2,11 +2,15 @@ def score_setup(
     session,
     sweep,
     structure=None,
+    rr=None,
     crt=None,
     fvg=None,
     ob=None,
     killzone=None,
-    news_risk=None
+    news_risk=None,
+    mtf_alignment=False,
+    daily_liquidity=None,
+    session_liquidity=None
 ):
 
     score = 0
@@ -75,24 +79,68 @@ def score_setup(
         reasons.append("Silver Bullet timing window")
     
     # News Risk
-    if news_risk == "HIGH NEWS RISK":
-        score -= 25
-        reasons.append("High-impact news risk detected")
+    if "HIGH NEWS RISK" in str(news_risk):
+      score -= 40
+      reasons.append(f"High-impact news risk detected: {news_risk}")
 
     elif news_risk == "LOW NEWS RISK":
-        score += 5
-        reasons.append("No major news risk")
+      score += 5
+      reasons.append("No major news risk")
+
+    # Multi-timeframe alignment
+    if mtf_alignment:
+        score += 20
+        reasons.append("15M and 1H aligned") 
+
+     # Daily liquidity
+    if daily_liquidity in ["PDH SWEPT", "PDL SWEPT"]:
+        score += 15
+        reasons.append(f"Daily liquidity event: {daily_liquidity}")  
+    if session_liquidity in ["ASIA HIGH SWEPT", "ASIA LOW SWEPT"]:
+        score += 15
+        reasons.append(f"Session liquidity event: {session_liquidity}")
+
+    # Ranging market penalty
+    if structure == "RANGING":
+        score -= 25
+        reasons.append("Ranging market penalty")
+
+    # No sweep penalty
+    if sweep == "NO SWEEP":
+        score -= 15
+        reasons.append("No liquidity sweep")
+
+    # No FVG and no OB penalty
+    if fvg == "NO FVG" and ob == "NO OB":
+        score -= 40
+        reasons.append("No FVG or order block confirmation")
+
+    # RR penalty
+    try:
+        rr_value = float(rr)
+    except:
+        rr_value = 0
+
+    if rr_value < 1:
+        score -= 80
+        reasons.append("Poor RR")
+
+    elif rr_value < 2:
+        score -= 25
+        reasons.append("Average RR")    
+
+    score = max(score, 0)
+    score = min(score, 100)     
+
     # Grade
     if score >= 90:
         grade = "A+"
-
     elif score >= 75:
         grade = "A"
-
     elif score >= 55:
         grade = "B"
-
     else:
         grade = "C"
+       
 
     return score, grade, reasons
